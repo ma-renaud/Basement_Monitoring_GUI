@@ -1,93 +1,116 @@
-#python -m pip install pyserial
-import serial
+import sys
+
+from main_window import MainWindow
+
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from matplotlib.figure import Figure
-from numpy import arange, sin, cos
-from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
+from gi.repository import GLib, Gio, Gtk
 
+# This would typically be its own file
+MENU_XML="""
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <menu id="app-menu">
+    <submenu>
+      <attribute name="label">Application</attribute>
+      <section>
+        <item>
+          <attribute name="action">app.quit</attribute>
+          <attribute name="label" translatable="yes">_Quit</attribute>
+          <attribute name="accel">&lt;Primary&gt;q</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label">Serial</attribute>
+      <section>
+        <item>
+          <attribute name="action">app.serialConnect</attribute>
+          <attribute name="label" translatable="yes">Connect</attribute>
+        </item>
+      </section>
+    </submenu>
+  </menu>
+</interface>
+"""
 
-class HeaderBarWindow(Gtk.Window):
-    def __init__(self):
-        Gtk.Window.__init__(self, title="HeaderBar Demo")
-        self.set_default_size(1000, 600)
-        self.set_position(Gtk.WindowPosition.CENTER)
-        self.connect("destroy", Gtk.main_quit)
+class AppWindow(Gtk.ApplicationWindow):
 
-        hb = Gtk.HeaderBar()
-        hb.set_show_close_button(True)
-        hb.set_title("HeaderBar example")
-        hb.set_subtitle("HeaderBar Subtitle")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        self.set_titlebar(hb)
+        # This will be in the windows group and have the "win" prefix
+        max_action = Gio.SimpleAction.new_stateful("maximize", None,
+                                           GLib.Variant.new_boolean(False))
+        max_action.connect("change-state", self.on_maximize_toggle)
+        self.add_action(max_action)
 
-        self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.add(self.hbox)
+        # Keep it in sync with the actual state
+        self.connect("notify::is-maximized",
+                            lambda obj, pspec: max_action.set_state(
+                                               GLib.Variant.new_boolean(obj.props.is_maximized)))
 
-        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.hbox.pack_start(self.vbox, False, True, 10)
+        lbl_variant = GLib.Variant.new_string("String 1")
+        lbl_action = Gio.SimpleAction.new_stateful("change_label", lbl_variant.get_type(),
+                                               lbl_variant)
+        lbl_action.connect("change-state", self.on_change_label_state)
+        self.add_action(lbl_action)
 
-        self.spacer1 = Gtk.Label()
-        self.vbox.pack_start(self.spacer1, False, True, 15)
+        self.label = Gtk.Label(label=lbl_variant.get_string(),
+                               margin=30)
+        self.add(self.label)
+        self.label.show()
 
-        self.temperature = Gtk.Label()
-        self.temperature.set_markup('Température')
-        self.vbox.pack_start(self.temperature, False, True, 0)
+    def on_change_label_state(self, action, value):
+        action.set_state(value)
+        self.label.set_text(value.get_string())
 
-        self.temperature = Gtk.Label()
-        self.temperature.set_markup('<span font="30">23.4 °C</span>')
-        self.vbox.pack_start(self.temperature, False, True, 0)
+    def on_maximize_toggle(self, action, value):
+        action.set_state(value)
+        if value.get_boolean():
+            self.maximize()
+        else:
+            self.unmaximize()
 
-        self.spacer2 = Gtk.Label()
-        self.vbox.pack_start(self.spacer2, False, True, 10)
+class Application(Gtk.Application):
 
-        self.temperature = Gtk.Label()
-        self.temperature.set_markup('Humidité')
-        self.vbox.pack_start(self.temperature, False, True, 0)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, application_id="org.example.myapp", **kwargs)
+        self.window = None
 
-        self.relHumidity = Gtk.Label()
-        self.relHumidity.set_markup('<span font="30">48 %</span>')
-        self.vbox.pack_start(self.relHumidity, False, True, 0)
+        #self.add_main_option("test", ord("t"), GLib.OptionFlags.NONE,
+        #                     GLib.OptionArg.NONE, "Command line test", None)
 
-        self.sep = Gtk.Separator()
-        self.sep.set_orientation(Gtk.Orientation.VERTICAL)
-        self.sep.get_style_context().add_class("sidebar-separator")
-        self.hbox.pack_start(self.sep, False, True, 0)
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
 
-        fig = Figure(figsize=(5, 5), dpi=100)
-        ax = fig.add_subplot(111, xlabel="Temps [s]")
-        ax.set_ylabel('Température [°C]', color='C0')
-        ax2 = ax.twinx()
-        ax2.set_ylabel('Humidité relative [%]', color='r')
+        action = Gio.SimpleAction.new("quit", None)
+        action.connect("activate", self.on_quit)
+        self.add_action(action)
 
-        t = arange(0.01, 10.0, 0.01)
-        s1 = sin(t)
-        s2 = cos(t)
+        action = Gio.SimpleAction.new("serialConnect", None)
+        action.connect("activate", self.on_serial_connect)
+        self.add_action(action)
 
-        ax.plot(t, s1)
-        ax2.plot(t, s2, 'r')
+        builder = Gtk.Builder.new_from_string(MENU_XML, -1)
+        self.set_menubar(builder.get_object("app-menu"))
 
-        sw = Gtk.ScrolledWindow()
-        vbox_graph = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        vbox_graph.pack_start(sw, True, True, 10)
-        self.hbox.pack_start(vbox_graph, True, True, 5)
-        canvas = FigureCanvas(fig)
-        canvas.set_size_request(400, 400)
-        sw.add_with_viewport(canvas)
+    def do_activate(self):
+        # We only allow a single window and raise any existing ones
+        if not self.window:
+            # Windows are associated with the application
+            # when the last one is closed the application shuts down
+            self.window = MainWindow(application=self, title="Monitoring")
 
-win = HeaderBarWindow()
-win.connect("delete-event", Gtk.main_quit)
-win.show_all()
-Gtk.main()
+        self.window.present()
 
-# configure the serial connections (the parameters differs on the device you are connecting to)
-'''
-ser = serial.Serial(
-    port='COM8',
-    baudrate=9600,
-    parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS
-)
-'''
+    def on_serial_connect(self, action, param):
+        about_dialog = Gtk.AboutDialog(transient_for=self.window, modal=True)
+        about_dialog.present()
+
+    def on_quit(self, action, param):
+        self.quit()
+
+if __name__ == "__main__":
+    app = Application()
+    app.run(sys.argv)
