@@ -5,10 +5,10 @@ from serial_window import SerialWindow
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gio, Gtk
+from gi.repository import Gio, Gtk
 
 # This would typically be its own file
-MENU_XML="""
+MENU_XML = """
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <menu id="app-menu">
@@ -42,12 +42,9 @@ MENU_XML="""
 
 class Application(Gtk.Application):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, application_id="org.example.myapp", **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(application_id="org.example.myapp", **kwargs)
         self.window = None
-
-        #self.add_main_option("test", ord("t"), GLib.OptionFlags.NONE,
-        #                     GLib.OptionArg.NONE, "Command line test", None)
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -76,7 +73,8 @@ class Application(Gtk.Application):
 
         self.window.present()
 
-    def on_serial_config(self, action, param):
+    @staticmethod
+    def on_serial_config(action, param):
         win = SerialWindow()
         win.show()
 

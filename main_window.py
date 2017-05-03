@@ -28,30 +28,30 @@ class MainWindow(Gtk.ApplicationWindow):
         self.show_all()
 
     def create_left_panel(self):
-        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.hbox.pack_start(self.vbox, False, True, 10)
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.hbox.pack_start(vbox, False, True, 10)
 
-        self.spacer1 = Gtk.Label()
-        self.vbox.pack_start(self.spacer1, False, True, 15)
+        spacer1 = Gtk.Label()
+        vbox.pack_start(spacer1, False, True, 15)
 
-        self.temperature = Gtk.Label()
-        self.temperature.set_markup('Temperature')
-        self.vbox.pack_start(self.temperature, False, True, 0)
+        temperature = Gtk.Label()
+        temperature.set_markup('Temperature')
+        vbox.pack_start(temperature, False, True, 0)
 
-        self.temperature = Gtk.Label()
-        self.temperature.set_markup('<span font="30">23.4 °C</span>')
-        self.vbox.pack_start(self.temperature, False, True, 0)
+        temperature = Gtk.Label()
+        temperature.set_markup('<span font="30">23.4 °C</span>')
+        vbox.pack_start(temperature, False, True, 0)
 
-        self.spacer2 = Gtk.Label()
-        self.vbox.pack_start(self.spacer2, False, True, 10)
+        spacer2 = Gtk.Label()
+        vbox.pack_start(spacer2, False, True, 10)
 
-        self.temperature = Gtk.Label()
-        self.temperature.set_markup('Rel. Humidity')
-        self.vbox.pack_start(self.temperature, False, True, 0)
+        temperature = Gtk.Label()
+        temperature.set_markup('Rel. Humidity')
+        vbox.pack_start(temperature, False, True, 0)
 
-        self.relHumidity = Gtk.Label()
-        self.relHumidity.set_markup('<span font="30">48 %</span>')
-        self.vbox.pack_start(self.relHumidity, False, True, 0)
+        rel_humidity = Gtk.Label()
+        rel_humidity.set_markup('<span font="30">48 %</span>')
+        vbox.pack_start(rel_humidity, False, True, 0)
 
     def create_graph(self):
         fig = Figure(figsize=(5, 5), dpi=100)
