@@ -2,10 +2,12 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
+from serial_config import SerialConfig
+
 
 class SerialWindow(Gtk.Window):
 
-    def __init__(self):
+    def __init__(self, serial_config):
         Gtk.Window.__init__(self, title="Serial Communication Settings")
 
         self.set_default_size(400, 300)
@@ -21,6 +23,7 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Serial line to connect to", xalign=0)
         ed_comm_line = Gtk.Entry()
+        ed_comm_line.set_text(serial_config.line)
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(ed_comm_line, False, True, 0)
 
@@ -28,6 +31,7 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Speed (baud)", xalign=0)
         ed_speed = Gtk.Entry()
+        ed_speed.set_text(str(serial_config.speed))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(ed_speed, False, True, 0)
 
@@ -35,6 +39,7 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Data bits", xalign=0)
         ed_data = Gtk.Entry()
+        ed_data.set_text(str(serial_config.data_bits))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(ed_data, False, True, 0)
 
@@ -42,6 +47,7 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Stop bits", xalign=0)
         ed_stop = Gtk.Entry()
+        ed_stop.set_text(str(serial_config.stop_bits))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(ed_stop, False, True, 0)
 
@@ -50,16 +56,18 @@ class SerialWindow(Gtk.Window):
         label = Gtk.Label("Parity", xalign=0)
         combo_parity = Gtk.ComboBoxText()
         self.fill_combo_parity(combo_parity)
+        combo_parity.set_active_id(str(serial_config.parity))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(combo_parity, False, True, 0)
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Flow control", xalign=0)
-        combo_parity = Gtk.ComboBoxText()
-        self.fill_combo_flow(combo_parity)
+        combo_flow = Gtk.ComboBoxText()
+        self.fill_combo_flow(combo_flow)
+        combo_flow.set_active_id(str(serial_config.flow))
         hbox.pack_start(label, True, True, 0)
-        hbox.pack_start(combo_parity, False, True, 0)
+        hbox.pack_start(combo_flow, False, True, 0)
 
         vbox = Gtk.VBox(False, 5)
         hbox = Gtk.HBox(True, 3)
