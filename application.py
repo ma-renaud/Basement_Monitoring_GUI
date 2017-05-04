@@ -74,15 +74,15 @@ class Application(Gtk.Application):
         Gtk.Application.do_shutdown(self)
 
         #voir https://www.blog.pythonlibrary.org/2013/10/25/python-101-an-intro-to-configparser/
-        config = configparser.ConfigParser()
-        config.set("Serial", "Line", "COM1")
-        config.set("Serial", "Speed", "9600")
-        config.set("Serial", "Data Bits", "8")
-        config.set("Serial", "Stop Bits", "1")
-        config.set("Serial", "Parity", "0")
-        config.set("Serial", "Flow", "2")
+        config = self.get_config()
+        config.set("Serial", "Line", self.serial_config.line)
+        config.set("Serial", "Speed", str(self.serial_config.speed))
+        config.set("Serial", "Data Bits", str(self.serial_config.data_bits))
+        config.set("Serial", "Stop Bits", str(self.serial_config.stop_bits))
+        config.set("Serial", "Parity", str(self.serial_config.parity))
+        config.set("Serial", "Flow", str(self.serial_config.flow))
 
-        with open(self.config_path, "at", encoding='utf8') as config_file:
+        with open(self.config_path, "wt", encoding='utf8') as config_file:
             config.write(config_file)
 
     def do_activate(self):
@@ -105,25 +105,30 @@ class Application(Gtk.Application):
         config.set("Serial", "Parity", "0")
         config.set("Serial", "Flow", "2")
 
-        with open(self.config_path, "at", encoding='utf8') as config_file:
+        with open(self.config_path, "wt", encoding='utf8') as config_file:
             config.write(config_file)
+
+    def get_config(self):
+        if not os.path.exists(self.config_path):
+            self.create_config()
+
+        config = configparser.ConfigParser()
+        config.read(self.config_path)
+        return config
 
     def read_config(self):
         if not self.serial_config:
             self.serial_config = SerialConfig()
 
-        if not os.path.exists(self.config_path):
-            self.create_config()
+        config = self.get_config()
+        config.read('config.ini')
 
-        parser = configparser.ConfigParser()
-        parser.read('config.ini')
-
-        self.serial_config.line = parser.get("Serial", "Line", fallback="COM1")
-        self.serial_config.speed = parser.getint("Serial", "Speed", fallback="9600")
-        self.serial_config.data_bits = parser.getint("Serial", "Data Bits", fallback="8")
-        self.serial_config.stop_bits = parser.getint("Serial", "Stop Bits", fallback="1")
-        self.serial_config.parity = parser.getint("Serial", "Parity", fallback="0")
-        self.serial_config.flow = parser.getint("Serial", "Flow", fallback="2")
+        self.serial_config.line = config.get("Serial", "Line", fallback="COM1")
+        self.serial_config.speed = config.getint("Serial", "Speed", fallback="9600")
+        self.serial_config.data_bits = config.getint("Serial", "Data Bits", fallback="8")
+        self.serial_config.stop_bits = config.getint("Serial", "Stop Bits", fallback="1")
+        self.serial_config.parity = config.getint("Serial", "Parity", fallback="0")
+        self.serial_config.flow = config.getint("Serial", "Flow", fallback="2")
 
     def on_serial_config(self, action, param):
         win = SerialWindow(self.serial_config)
