@@ -1,10 +1,11 @@
-import serial
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from matplotlib.figure import Figure
 from numpy import arange, sin, cos
 from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
+
+# import serial
 
 
 class MainWindow(Gtk.ApplicationWindow):

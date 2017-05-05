@@ -1,14 +1,16 @@
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gio, Gtk, GLib
+
 import sys
+import os
+import serial
+import configparser
 
 from main_window import MainWindow
 from serial_window import SerialWindow
 from serial_config import SerialConfig
-import configparser
-import os
 
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gio, Gtk
 
 # This would typically be its own file
 MENU_XML = """
@@ -36,11 +38,16 @@ MENU_XML = """
           <attribute name="action">app.serialConnect</attribute>
           <attribute name="label" translatable="yes">Connect</attribute>
         </item>
+        <item>
+          <attribute name="action">app.serialDisconnect</attribute>
+          <attribute name="label" translatable="yes">Disconnect</attribute>
+        </item>
       </section>
     </submenu>
   </menu>
 </interface>
 """
+
 
 class Application(Gtk.Application):
 
@@ -48,7 +55,10 @@ class Application(Gtk.Application):
         super().__init__(application_id="org.example.myapp", **kwargs)
         self.window = None
         self.serial_config = None
-        self.config_path = "config.ini"
+        self.connect_action = None
+        self.disconnect_action = None
+        self.serial_port = serial.Serial()
+        self.config_path = ""
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -63,9 +73,14 @@ class Application(Gtk.Application):
         action.connect("activate", self.on_serial_config)
         self.add_action(action)
 
-        action = Gio.SimpleAction.new("serialConnect", None)
-        action.connect("activate", self.on_serial_connect)
-        self.add_action(action)
+        self.connect_action = Gio.SimpleAction.new("serialConnect", None)
+        self.connect_action.connect("activate", self.on_serial_connect)
+        self.add_action(self.connect_action)
+
+        self.disconnect_action = Gio.SimpleAction.new("serialDisconnect", None)
+        self.disconnect_action.connect("activate", self.on_serial_disconnect)
+        self.disconnect_action.set_enabled(False)
+        self.add_action(self.disconnect_action)
 
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
         self.set_menubar(builder.get_object("app-menu"))
@@ -73,7 +88,9 @@ class Application(Gtk.Application):
     def do_shutdown(self):
         Gtk.Application.do_shutdown(self)
 
-        #voir https://www.blog.pythonlibrary.org/2013/10/25/python-101-an-intro-to-configparser/
+        if self.serial_port.is_open:
+            self.serial_port.close()
+
         config = self.get_config()
         config.set("Serial", "Line", self.serial_config.line)
         config.set("Serial", "Speed", str(self.serial_config.speed))
@@ -120,8 +137,13 @@ class Application(Gtk.Application):
         if not self.serial_config:
             self.serial_config = SerialConfig()
 
+        user_config_dir = os.path.expanduser("~") + os.path.sep + ".basement_monitoring"
+        if not os.path.exists(user_config_dir):
+            os.makedirs(user_config_dir)
+        self.config_path = user_config_dir + os.path.sep + "user_config.ini"
+
         config = self.get_config()
-        config.read('config.ini')
+        config.read(self.config_path)
 
         self.serial_config.line = config.get("Serial", "Line", fallback="COM1")
         self.serial_config.speed = config.getint("Serial", "Speed", fallback="9600")
@@ -135,8 +157,22 @@ class Application(Gtk.Application):
         win.show()
 
     def on_serial_connect(self, action, param):
-        about_dialog = Gtk.AboutDialog(transient_for=self.window, modal=True)
-        about_dialog.present()
+        if not self.serial_port.is_open:
+            self.serial_port.baudrate = self.serial_config.speed
+            self.serial_port.port = self.serial_config.line
+            self.serial_port.bytesize = self.serial_config.data_bits
+            self.serial_port.stopbits = self.serial_config.stop_bits
+            self.serial_port.xonxoff = True
+            self.serial_port.rtscts = False
+            self.serial_port.open()
+            self.connect_action.set_enabled(False)
+            self.disconnect_action.set_enabled(True)
+
+    def on_serial_disconnect(self, action, param):
+        if self.serial_port.is_open:
+            self.serial_port.close()
+            self.connect_action.set_enabled(True)
+            self.disconnect_action.set_enabled(False)
 
     def on_quit(self, action, param):
         self.quit()
