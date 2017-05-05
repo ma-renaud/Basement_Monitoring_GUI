@@ -1,15 +1,19 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gio, Gtk, GLib
+from numpy import random
 
 import sys
 import os
 import serial
 import configparser
+import time
+import threading
 
 from main_window import MainWindow
 from serial_window import SerialWindow
 from serial_config import SerialConfig
+from environmental_data import EnvironmentalData
 
 
 # This would typically be its own file
@@ -59,6 +63,7 @@ class Application(Gtk.Application):
         self.disconnect_action = None
         self.serial_port = serial.Serial()
         self.config_path = ""
+        self.environmental_data_stack = list()
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -85,6 +90,12 @@ class Application(Gtk.Application):
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
         self.set_menubar(builder.get_object("app-menu"))
 
+        self.thread_data = threading.Thread(target=self.generate_test_data, args=[self.environmental_data_stack])
+        self.thread_data.daemon = True
+
+        self.thread_gui = threading.Thread(target=self.update_gui)
+        self.thread_gui.daemon = True
+
     def do_shutdown(self):
         Gtk.Application.do_shutdown(self)
 
@@ -110,6 +121,8 @@ class Application(Gtk.Application):
             self.window = MainWindow(application=self, title="Monitoring")
 
         self.window.present()
+        self.thread_data.start()
+        self.thread_gui.start()
 
     def create_config(self):
 
@@ -176,6 +189,21 @@ class Application(Gtk.Application):
 
     def on_quit(self, action, param):
         self.quit()
+
+    def update_gui(self):
+        while True:
+            if len(self.environmental_data_stack) > 0:
+                GLib.idle_add(self.window.update, self.environmental_data_stack.pop(0))
+            time.sleep(0.2)
+
+    @staticmethod
+    def generate_test_data(stack):
+        while True:
+            temp = 20 * random.random_sample() + 15
+            hum = 30 * random.random_sample() + 30
+            env = EnvironmentalData(temp, hum)
+            stack.append(env)
+            time.sleep(1)
 
 if __name__ == "__main__":
     app = Application()
