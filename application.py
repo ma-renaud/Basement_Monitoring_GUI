@@ -59,6 +59,8 @@ class Application(Gtk.Application):
         super().__init__(application_id="org.example.myapp", **kwargs)
         self.window = None
         self.serial_config = None
+        self.thread_data = None
+        self.thread_gui = None
         self.connect_action = None
         self.disconnect_action = None
         self.serial_port = serial.Serial()
@@ -196,6 +198,8 @@ class Application(Gtk.Application):
                 GLib.idle_add(self.window.update, self.environmental_data_stack.pop(0))
             time.sleep(0.2)
 
+    # def process
+
     @staticmethod
     def generate_test_data(stack):
         while True:
@@ -203,7 +207,7 @@ class Application(Gtk.Application):
             hum = 30 * random.random_sample() + 30
             env = EnvironmentalData(temp, hum)
             stack.append(env)
-            time.sleep(1)
+            time.sleep(3)
 
 if __name__ == "__main__":
     app = Application()
