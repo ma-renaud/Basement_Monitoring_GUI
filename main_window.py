@@ -91,7 +91,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def set_graph_axis(self):
         self.axTemperature.clear()
-        self.axTemperature.set_xlabel('Temps [s]')
         self.axTemperature.set_ylabel('Temperature [°C]', color='r')
         self.axTemperature.xaxis_date()
         labels = self.axTemperature.get_xticklabels()
@@ -103,7 +102,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.axHumidity.clear()
         self.axHumidity.xaxis_date()
-        self.axHumidity.set_ylabel('Relative Humidity [%]', color='C0')
+        self.axHumidity.set_ylabel('Relative humidity [%]', color='C0')
         self.axHumidity.xaxis.set_major_formatter(xfmt)
         self.axHumidity.autoscale_view(True, True, True)
 
