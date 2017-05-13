@@ -63,7 +63,7 @@ class MainWindow(Gtk.ApplicationWindow):
         temperature.set_markup('Temperature')
         vbox.pack_start(temperature, False, True, 0)
 
-        self.temperature.set_markup('<span font="30">23.4 °C</span>')
+        self.temperature.set_markup('<span font="30">00.0 °C</span>')
         vbox.pack_start(self.temperature, False, True, 0)
 
         spacer2 = Gtk.Label()
@@ -73,7 +73,7 @@ class MainWindow(Gtk.ApplicationWindow):
         humidity.set_markup('Rel. Humidity')
         vbox.pack_start(humidity, False, True, 0)
 
-        self.rel_humidity.set_markup('<span font="30">48 %</span>')
+        self.rel_humidity.set_markup('<span font="30">00 %</span>')
         vbox.pack_start(self.rel_humidity, False, True, 0)
 
     def create_graph(self):
@@ -92,6 +92,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def set_graph_axis(self):
         self.axTemperature.clear()
+        self.axTemperature.set_ylim([10, 40])
         self.axTemperature.set_ylabel('Temperature [°C]', color='r')
         self.axTemperature.xaxis_date()
         labels = self.axTemperature.get_xticklabels()
@@ -99,13 +100,12 @@ class MainWindow(Gtk.ApplicationWindow):
             l.update({'rotation': 25})
         xfmt = md.DateFormatter('%m/%d %H:%M')
         self.axTemperature.xaxis.set_major_formatter(xfmt)
-        self.axTemperature.autoscale_view(True, True, True)
 
         self.axHumidity.clear()
         self.axHumidity.xaxis_date()
+        self.axHumidity.set_ylim([25, 70])
         self.axHumidity.set_ylabel('Relative humidity [%]', color='C0')
         self.axHumidity.xaxis.set_major_formatter(xfmt)
-        self.axHumidity.autoscale_view(True, True, True)
 
 
 if __name__ == "__main__":

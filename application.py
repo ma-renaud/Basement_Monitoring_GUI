@@ -14,6 +14,7 @@ from main_window import MainWindow
 from serial_window import SerialWindow
 from serial_config import SerialConfig
 from environmental_data import EnvironmentalData
+from serial_decoder import SerialDecoder
 
 
 # This would typically be its own file
@@ -66,6 +67,7 @@ class Application(Gtk.Application):
         self.serial_port = serial.Serial()
         self.config_path = ""
         self.environmental_data_stack = list()
+        self.decoder = SerialDecoder()
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -92,7 +94,7 @@ class Application(Gtk.Application):
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
         self.set_menubar(builder.get_object("app-menu"))
 
-        self.thread_data = threading.Thread(target=self.generate_test_data, args=[self.environmental_data_stack])
+        self.thread_data = threading.Thread(target=self.read_serial)
         self.thread_data.daemon = True
 
         self.thread_gui = threading.Thread(target=self.update_gui)
@@ -179,6 +181,7 @@ class Application(Gtk.Application):
             self.serial_port.stopbits = self.serial_config.stop_bits
             self.serial_port.xonxoff = True
             self.serial_port.rtscts = False
+            self.serial_port.timeout = 1
             self.serial_port.open()
             self.connect_action.set_enabled(False)
             self.disconnect_action.set_enabled(True)
@@ -198,7 +201,14 @@ class Application(Gtk.Application):
                 GLib.idle_add(self.window.update, self.environmental_data_stack.pop(0))
             time.sleep(0.2)
 
-    # def process
+    def read_serial(self):
+        while True:
+            if self.serial_port.is_open:
+                self.decoder.decode(self.serial_port.read().decode("utf-8"))
+                if self.decoder.completed:
+                    env = EnvironmentalData(self.decoder.decoded[0], self.decoder.decoded[1])
+                    self.environmental_data_stack.append(env)
+            time.sleep(0.1)
 
     @staticmethod
     def generate_test_data(stack):

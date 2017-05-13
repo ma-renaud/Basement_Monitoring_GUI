@@ -13,7 +13,8 @@ class ReceiveData(State):
         if _input == ">":
             self.context.append_received_data()
             self.context.reception_complete()
+            self.context.currentState = WaitForStart(self.context)
         elif _input == ",":
             self.context.append_received_data()
         else:
-            self.context.receive_data()
+            self.context.receive_data(_input)
