@@ -2,11 +2,13 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
+
 class SerialWindow(Gtk.Window):
 
-    def __init__(self, serial_config):
+    def __init__(self, serial_config, callback):
         Gtk.Window.__init__(self, title="Serial Communication Settings")
         self.serial_config = serial_config
+        self.callback = callback
 
         self.set_default_size(400, 300)
         self.set_border_width(15)
@@ -112,6 +114,7 @@ class SerialWindow(Gtk.Window):
         self.serial_config.stop_bits = int(self.ed_stop.get_text())
         self.serial_config.parity = int(self.combo_parity.get_active_id())
         self.serial_config.flow = int(self.combo_flow.get_active_id())
+        self.callback(self.serial_config)
         self.close()
 
     def on_cancel_clicked(self, button):

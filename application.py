@@ -3,18 +3,17 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gio, Gtk, GLib
 from numpy import random
 
-import sys
 import os
+import sys
 import serial
-import configparser
 import time
 import threading
 
 from main_window import MainWindow
 from serial_window import SerialWindow
-from serial_config import SerialConfig
 from environmental_data import EnvironmentalData
 from serial_decoder import SerialDecoder
+from config_manager import ConfigManager
 
 
 # This would typically be its own file
@@ -68,11 +67,16 @@ class Application(Gtk.Application):
         self.config_path = ""
         self.environmental_data_stack = list()
         self.decoder = SerialDecoder()
+        self.config_manager = None
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
-        self.read_config()
+        user_config_dir = os.path.expanduser("~") + os.path.sep + ".basement_monitoring"
+        if not os.path.exists(user_config_dir):
+            os.makedirs(user_config_dir)
+        self.config_manager = ConfigManager(user_config_dir + os.path.sep + "user_config.ini")
+        self.serial_config = self.config_manager.read_serial_config()
 
         action = Gio.SimpleAction.new("quit", None)
         action.connect("activate", self.on_quit)
@@ -106,17 +110,6 @@ class Application(Gtk.Application):
         if self.serial_port.is_open:
             self.serial_port.close()
 
-        config = self.get_config()
-        config.set("Serial", "Line", self.serial_config.line)
-        config.set("Serial", "Speed", str(self.serial_config.speed))
-        config.set("Serial", "Data Bits", str(self.serial_config.data_bits))
-        config.set("Serial", "Stop Bits", str(self.serial_config.stop_bits))
-        config.set("Serial", "Parity", str(self.serial_config.parity))
-        config.set("Serial", "Flow", str(self.serial_config.flow))
-
-        with open(self.config_path, "wt", encoding='utf8') as config_file:
-            config.write(config_file)
-
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.window:
@@ -128,49 +121,8 @@ class Application(Gtk.Application):
         self.thread_data.start()
         self.thread_gui.start()
 
-    def create_config(self):
-
-        config = configparser.ConfigParser()
-        config.add_section("Serial")
-        config.set("Serial", "Line", "COM1")
-        config.set("Serial", "Speed", "9600")
-        config.set("Serial", "Data Bits", "8")
-        config.set("Serial", "Stop Bits", "1")
-        config.set("Serial", "Parity", "0")
-        config.set("Serial", "Flow", "2")
-
-        with open(self.config_path, "wt", encoding='utf8') as config_file:
-            config.write(config_file)
-
-    def get_config(self):
-        if not os.path.exists(self.config_path):
-            self.create_config()
-
-        config = configparser.ConfigParser()
-        config.read(self.config_path)
-        return config
-
-    def read_config(self):
-        if not self.serial_config:
-            self.serial_config = SerialConfig()
-
-        user_config_dir = os.path.expanduser("~") + os.path.sep + ".basement_monitoring"
-        if not os.path.exists(user_config_dir):
-            os.makedirs(user_config_dir)
-        self.config_path = user_config_dir + os.path.sep + "user_config.ini"
-
-        config = self.get_config()
-        config.read(self.config_path)
-
-        self.serial_config.line = config.get("Serial", "Line", fallback="COM1")
-        self.serial_config.speed = config.getint("Serial", "Speed", fallback="9600")
-        self.serial_config.data_bits = config.getint("Serial", "Data Bits", fallback="8")
-        self.serial_config.stop_bits = config.getint("Serial", "Stop Bits", fallback="1")
-        self.serial_config.parity = config.getint("Serial", "Parity", fallback="0")
-        self.serial_config.flow = config.getint("Serial", "Flow", fallback="2")
-
     def on_serial_config(self, action, param):
-        win = SerialWindow(self.serial_config)
+        win = SerialWindow(self.serial_config, self.config_manager.write_serial_config)
         win.show()
 
     def on_serial_connect(self, action, param):
