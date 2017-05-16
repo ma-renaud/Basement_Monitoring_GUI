@@ -4,7 +4,7 @@ import datetime as dt
 class EnvironmentalData(object):
 
     def __init__(self, temperature, rel_humidity):
-        self.__temperature = 0;
+        self.__temperature = 0
         self.temperature = temperature
         self.rel_humidity = rel_humidity
         self.datetime = dt.datetime.now()

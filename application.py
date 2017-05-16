@@ -12,7 +12,7 @@ import threading
 from main_window import MainWindow
 from serial_window import SerialWindow
 from environmental_data import EnvironmentalData
-from environmental_data_history import EnvironmentalDataHistory
+from environmental_data_history import EnvironmentalDataHistory, TimeScale
 from serial_decoder import SerialDecoder
 from config_manager import ConfigManager
 
@@ -61,7 +61,8 @@ class Application(Gtk.Application):
         self.window = None
         self.serial_config = None
         self.thread_data = None
-        self.thread_gui = None
+        self.thread_values = None
+        self.thread_graph = None
         self.thread_data_test = None
         self.connect_action = None
         self.disconnect_action = None
@@ -103,8 +104,11 @@ class Application(Gtk.Application):
         self.thread_data = threading.Thread(target=self.read_serial)
         self.thread_data.daemon = True
 
-        self.thread_gui = threading.Thread(target=self.update_gui)
-        self.thread_gui.daemon = True
+        self.thread_values = threading.Thread(target=self.update_values)
+        self.thread_values.daemon = True
+
+        self.thread_graph = threading.Thread(target=self.update_graph)
+        self.thread_graph.daemon = True
 
         self.thread_data_test = threading.Thread(target=self.generate_test_data, args=[self.environmental_data_history])
         self.thread_data_test.daemon = True
@@ -124,7 +128,8 @@ class Application(Gtk.Application):
 
         self.window.present()
         # self.thread_data.start()
-        self.thread_gui.start()
+        self.thread_values.start()
+        self.thread_graph.start()
         self.thread_data_test.start()
 
     def on_serial_config(self, action, param):
@@ -153,12 +158,24 @@ class Application(Gtk.Application):
     def on_quit(self, action, param):
         self.quit()
 
-    def update_gui(self):
+    def update_values(self):
         while True:
             if len(self.environmental_data_history.get_history()) > 0:
-                GLib.idle_add(self.window.update, self.environmental_data_history.get_history(),
-                              self.environmental_data_history.last_five_minute[-1])
-            time.sleep(3)
+                GLib.idle_add(self.window.update_values, self.environmental_data_history.last)
+            time.sleep(1)
+
+    def update_graph(self):
+        while True:
+            if len(self.environmental_data_history.get_history()) > 0:
+                GLib.idle_add(self.window.update_graph, self.environmental_data_history.get_history(),
+                              self.environmental_data_history.time_scale)
+
+            time_to_sleep = 2
+            if self.environmental_data_history.time_scale is TimeScale.HOURS:
+                time_to_sleep = 1800
+            if self.environmental_data_history.time_scale is TimeScale.MINUTES:
+                time_to_sleep = 30
+            time.sleep(time_to_sleep)
 
     def read_serial(self):
         while True:

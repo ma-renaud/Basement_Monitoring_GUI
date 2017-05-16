@@ -4,7 +4,7 @@ from gi.repository import Gtk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
 import matplotlib.dates as md
-import datetime as dt
+from environmental_data_history import TimeScale
 
 
 class MainWindow(Gtk.ApplicationWindow):
@@ -32,14 +32,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.show_all()
 
-    def update(self, environmental_data_history, environmental_data_last):
+    def update_values(self, environmental_data_last):
         self.temperature.set_markup('<span font="30">' + "{0:.1f}".format(environmental_data_last.temperature) +
                                     ' °C</span>')
         self.rel_humidity.set_markup('<span font="30">' + "{0:.1f}".format(environmental_data_last.rel_humidity) +
                                      ' %</span>')
 
-        self.set_graph_axis()
-
+    def update_graph(self, environmental_data_history, time_scale):
+        self.set_graph_axis(time_scale)
         time_array = [o.datetime for o in environmental_data_history]
         temp_array = [o.temperature for o in environmental_data_history]
         hum_array = [o.rel_humidity for o in environmental_data_history]
@@ -76,7 +76,7 @@ class MainWindow(Gtk.ApplicationWindow):
         fig = Figure()
         self.axTemperature = fig.add_subplot(111, xlabel="Temps [s]")
         self.axHumidity = self.axTemperature.twinx()
-        self.set_graph_axis()
+        self.set_graph_axis(TimeScale.SECONDS)
 
         sw = Gtk.ScrolledWindow()
         vbox_graph = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -86,7 +86,12 @@ class MainWindow(Gtk.ApplicationWindow):
         sw.add_with_viewport(self.plot_canvas)
         self.hbox.pack_start(vbox_graph, True, True, 5)
 
-    def set_graph_axis(self):
+    def set_graph_axis(self, time_scale):
+        if time_scale == TimeScale.SECONDS:
+            xfmt = md.DateFormatter('%H:%M:%S')
+        else:
+            xfmt = md.DateFormatter('%m/%d %H:%M')
+
         self.axTemperature.clear()
         self.axTemperature.set_ylim([10, 40])
         self.axTemperature.set_ylabel('Temperature [°C]', color='r')
@@ -94,7 +99,6 @@ class MainWindow(Gtk.ApplicationWindow):
         labels = self.axTemperature.get_xticklabels()
         for l in labels:
             l.update({'rotation': 25})
-        xfmt = md.DateFormatter('%m/%d %H:%M')
         self.axTemperature.xaxis.set_major_formatter(xfmt)
 
         self.axHumidity.clear()
