@@ -13,10 +13,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_default_size(1000, 600)
         self.set_position(Gtk.WindowPosition.CENTER)
 
-        self.timeArray = []
-        self.temperatureArray = []
-        self.humidityArray = []
-
         self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.add(self.hbox)
 
@@ -36,20 +32,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.show_all()
 
-    def update(self, environmental_data):
-        self.temperature.set_markup('<span font="30">' + "{0:.1f}".format(environmental_data.temperature) +
+    def update(self, environmental_data_history, environmental_data_last):
+        self.temperature.set_markup('<span font="30">' + "{0:.1f}".format(environmental_data_last.temperature) +
                                     ' °C</span>')
-        self.rel_humidity.set_markup('<span font="30">' + "{0:.1f}".format(environmental_data.rel_humidity) +
+        self.rel_humidity.set_markup('<span font="30">' + "{0:.1f}".format(environmental_data_last.rel_humidity) +
                                      ' %</span>')
-
-        self.timeArray.append(dt.datetime.now())
-        self.temperatureArray.append(environmental_data.temperature)
-        self.humidityArray.append(environmental_data.rel_humidity)
 
         self.set_graph_axis()
 
-        self.axTemperature.plot(self.timeArray, self.temperatureArray, 'r')
-        self.axHumidity.plot(self.timeArray, self.humidityArray, 'C0')
+        time_array = [o.datetime for o in environmental_data_history]
+        temp_array = [o.temperature for o in environmental_data_history]
+        hum_array = [o.rel_humidity for o in environmental_data_history]
+
+        self.axTemperature.plot(time_array, temp_array, 'r')
+        self.axHumidity.plot(time_array, hum_array, 'C0')
         self.plot_canvas.draw()
 
     def create_left_panel(self):

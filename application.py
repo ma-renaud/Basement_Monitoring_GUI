@@ -12,6 +12,7 @@ import threading
 from main_window import MainWindow
 from serial_window import SerialWindow
 from environmental_data import EnvironmentalData
+from environmental_data_history import EnvironmentalDataHistory
 from serial_decoder import SerialDecoder
 from config_manager import ConfigManager
 
@@ -61,11 +62,12 @@ class Application(Gtk.Application):
         self.serial_config = None
         self.thread_data = None
         self.thread_gui = None
+        self.thread_data_test = None
         self.connect_action = None
         self.disconnect_action = None
         self.serial_port = serial.Serial()
         self.config_path = ""
-        self.environmental_data_stack = list()
+        self.environmental_data_history = EnvironmentalDataHistory()
         self.decoder = SerialDecoder()
         self.config_manager = None
 
@@ -104,6 +106,9 @@ class Application(Gtk.Application):
         self.thread_gui = threading.Thread(target=self.update_gui)
         self.thread_gui.daemon = True
 
+        self.thread_data_test = threading.Thread(target=self.generate_test_data, args=[self.environmental_data_history])
+        self.thread_data_test.daemon = True
+
     def do_shutdown(self):
         Gtk.Application.do_shutdown(self)
 
@@ -118,8 +123,9 @@ class Application(Gtk.Application):
             self.window = MainWindow(application=self, title="Monitoring")
 
         self.window.present()
-        self.thread_data.start()
+        # self.thread_data.start()
         self.thread_gui.start()
+        self.thread_data_test.start()
 
     def on_serial_config(self, action, param):
         win = SerialWindow(self.serial_config, self.config_manager.write_serial_config)
@@ -149,9 +155,10 @@ class Application(Gtk.Application):
 
     def update_gui(self):
         while True:
-            if len(self.environmental_data_stack) > 0:
-                GLib.idle_add(self.window.update, self.environmental_data_stack.pop(0))
-            time.sleep(0.2)
+            if len(self.environmental_data_history.get_history()) > 0:
+                GLib.idle_add(self.window.update, self.environmental_data_history.get_history(),
+                              self.environmental_data_history.last_five_minute[-1])
+            time.sleep(3)
 
     def read_serial(self):
         while True:
@@ -159,17 +166,17 @@ class Application(Gtk.Application):
                 self.decoder.decode(self.serial_port.read().decode("utf-8"))
                 if self.decoder.completed:
                     env = EnvironmentalData(self.decoder.decoded[0], self.decoder.decoded[1])
-                    self.environmental_data_stack.append(env)
+                    self.environmental_data_history.append(env)
             time.sleep(0.1)
 
     @staticmethod
     def generate_test_data(stack):
         while True:
-            temp = 20 * random.random_sample() + 15
-            hum = 30 * random.random_sample() + 30
+            temp = 2 * random.random_sample() + 20
+            hum = 5 * random.random_sample() + 48
             env = EnvironmentalData(temp, hum)
             stack.append(env)
-            time.sleep(3)
+            time.sleep(1)
 
 if __name__ == "__main__":
     app = Application()
