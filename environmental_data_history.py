@@ -30,10 +30,8 @@ class EnvironmentalDataHistory:
     def set_time_scale(self):
         if len(self.last_day) > 5:
             self.current_scale = TimeScale.HOURS
-            self.last_hour.clear()
         elif len(self.last_hour) > 5:
             self.current_scale = TimeScale.MINUTES
-            self.last_five_minute.clear()
         else:
             self.current_scale = TimeScale.SECONDS
 
@@ -55,14 +53,11 @@ class EnvironmentalDataHistory:
 
     def average_last_minute(self):
         if len(self.seconds_buffer) > 1:
-            if self.current_scale is TimeScale.SECONDS:
-                self.last_five_minute.append(self.seconds_buffer[-1])
+            self.last_five_minute.append(self.seconds_buffer[-1])
 
             seconds_diff = (self.seconds_buffer[-1].datetime - self.seconds_buffer[0].datetime).total_seconds()
             if seconds_diff >= 60:
-                env = self.average_data(self.seconds_buffer, self.hours_buffer)
-                if self.current_scale is TimeScale.MINUTES:
-                    self.last_hour.append(env)
+                self.last_hour.append(self.average_data(self.seconds_buffer, self.hours_buffer))
                 self.seconds_buffer.clear()
 
     def average_last_hour(self):

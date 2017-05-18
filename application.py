@@ -127,10 +127,10 @@ class Application(Gtk.Application):
             self.window = MainWindow(application=self, title="Monitoring")
 
         self.window.present()
-        # self.thread_data.start()
+        self.thread_data.start()
         self.thread_values.start()
         self.thread_graph.start()
-        self.thread_data_test.start()
+        # self.thread_data_test.start()
 
     def on_serial_config(self, action, param):
         win = SerialWindow(self.serial_config, self.config_manager.write_serial_config)
@@ -182,8 +182,8 @@ class Application(Gtk.Application):
             if self.serial_port.is_open:
                 self.decoder.decode(self.serial_port.read().decode("utf-8"))
                 if self.decoder.completed:
-                    env = EnvironmentalData(self.decoder.decoded[0], self.decoder.decoded[1])
-                    self.environmental_data_history.append(env)
+                    self.environmental_data_history.append(EnvironmentalData(self.decoder.decoded[0],
+                                                                             self.decoder.decoded[1]))
             time.sleep(0.1)
 
     @staticmethod

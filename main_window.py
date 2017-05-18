@@ -103,7 +103,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.axHumidity.clear()
         self.axHumidity.xaxis_date()
-        self.axHumidity.set_ylim([25, 70])
+        self.axHumidity.set_ylim([35, 80])
         self.axHumidity.set_ylabel('Relative humidity [%]', color='C0')
         self.axHumidity.xaxis.set_major_formatter(xfmt)
 
