@@ -49,6 +49,23 @@ MENU_XML = """
         </item>
       </section>
     </submenu>
+    <submenu>
+      <attribute name="label">View</attribute>
+      <section>
+        <item>
+          <attribute name="action">app.viewSeconds</attribute>
+          <attribute name="label" translatable="yes">Seconds</attribute>
+        </item>
+        <item>
+          <attribute name="action">app.viewMinutes</attribute>
+          <attribute name="label" translatable="yes">Minutes</attribute>
+        </item>
+        <item>
+          <attribute name="action">app.viewHours</attribute>
+          <attribute name="label" translatable="yes">Hours</attribute>
+        </item>
+      </section>
+    </submenu>
   </menu>
 </interface>
 """
@@ -66,11 +83,16 @@ class Application(Gtk.Application):
         self.thread_data_test = None
         self.connect_action = None
         self.disconnect_action = None
+        self.seconds_action = None
+        self.minutes_action = None
+        self.hours_action = None
         self.serial_port = serial.Serial()
         self.config_path = ""
         self.environmental_data_history = EnvironmentalDataHistory()
         self.decoder = SerialDecoder()
         self.config_manager = None
+        self.view_mode = TimeScale.SECONDS
+        self.old_history_time_scale = self.environmental_data_history.time_scale
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -97,6 +119,20 @@ class Application(Gtk.Application):
         self.disconnect_action.connect("activate", self.on_serial_disconnect)
         self.disconnect_action.set_enabled(False)
         self.add_action(self.disconnect_action)
+
+        self.seconds_action = Gio.SimpleAction.new("viewSeconds", None)
+        self.seconds_action.connect("activate", self.on_view_seconds)
+        self.add_action(self.seconds_action)
+
+        self.minutes_action = Gio.SimpleAction.new("viewMinutes", None)
+        self.minutes_action.connect("activate", self.on_view_minutes)
+        self.minutes_action.set_enabled(False)
+        self.add_action(self.minutes_action)
+
+        self.hours_action = Gio.SimpleAction.new("viewHours", None)
+        self.hours_action.connect("activate", self.on_view_hours)
+        self.hours_action.set_enabled(False)
+        self.add_action(self.hours_action)
 
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
         self.set_menubar(builder.get_object("app-menu"))
@@ -155,27 +191,67 @@ class Application(Gtk.Application):
             self.connect_action.set_enabled(True)
             self.disconnect_action.set_enabled(False)
 
+    def on_view_seconds(self, action, param):
+        self.view_mode = TimeScale.SECONDS
+        GLib.idle_add(self.window.update_graph, self.environmental_data_history.get_history(self.view_mode),
+                      self.view_mode)
+
+    def on_view_minutes(self, action, param):
+        self.view_mode = TimeScale.MINUTES
+        GLib.idle_add(self.window.update_graph, self.environmental_data_history.get_history(self.view_mode),
+                      self.view_mode)
+
+    def on_view_hours(self, action, param):
+        self.view_mode = TimeScale.HOURS
+        GLib.idle_add(self.window.update_graph, self.environmental_data_history.get_history(self.view_mode),
+                      self.view_mode)
+
     def on_quit(self, action, param):
         self.quit()
 
+    def update_view_modes(self):
+        if self.view_mode == self.old_history_time_scale and \
+           self.old_history_time_scale != self.environmental_data_history.time_scale:
+            self.view_mode = self.environmental_data_history.time_scale
+            self.old_history_time_scale = self.environmental_data_history.time_scale
+
+        if self.environmental_data_history.time_scale is TimeScale.HOURS:
+            self.minutes_action.set_enabled(True)
+            self.hours_action.set_enabled(True)
+        if self.environmental_data_history.time_scale is TimeScale.MINUTES:
+            self.minutes_action.set_enabled(True)
+
     def update_values(self):
         while True:
-            if len(self.environmental_data_history.get_history()) > 0:
+            if len(self.environmental_data_history.get_history(self.view_mode)) > 0:
                 GLib.idle_add(self.window.update_values, self.environmental_data_history.last)
+
+            self.update_view_modes()
             time.sleep(1)
 
     def update_graph(self):
+        i = 0
+        second_refresh = 2
+        minute_refresh = 30
+        hour_refresh = 1800
+        refresh_needed = False
         while True:
-            if len(self.environmental_data_history.get_history()) > 0:
-                GLib.idle_add(self.window.update_graph, self.environmental_data_history.get_history(),
-                              self.environmental_data_history.time_scale)
+            if len(self.environmental_data_history.get_history(self.view_mode)) > 0:
+                if self.view_mode is TimeScale.SECONDS and i >= second_refresh:
+                    refresh_needed = True
+                elif self.view_mode is TimeScale.MINUTES and i >= minute_refresh:
+                    refresh_needed = True
+                elif i == hour_refresh:
+                    refresh_needed = True
 
-            time_to_sleep = 2
-            if self.environmental_data_history.time_scale is TimeScale.HOURS:
-                time_to_sleep = 1800
-            if self.environmental_data_history.time_scale is TimeScale.MINUTES:
-                time_to_sleep = 30
-            time.sleep(time_to_sleep)
+                if refresh_needed:
+                    GLib.idle_add(self.window.update_graph, self.environmental_data_history.get_history(self.view_mode),
+                                   self.view_mode)
+                    i = 0
+                    refresh_needed = False
+
+            i = i+2
+            time.sleep(2)
 
     def read_serial(self):
         while True:

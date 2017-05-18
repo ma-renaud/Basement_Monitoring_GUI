@@ -35,10 +35,10 @@ class EnvironmentalDataHistory:
         else:
             self.current_scale = TimeScale.SECONDS
 
-    def get_history(self):
-        if self.current_scale is TimeScale.HOURS:
+    def get_history(self, scale):
+        if scale is TimeScale.HOURS:
             return self.last_day
-        if self.current_scale is TimeScale.MINUTES:
+        if scale is TimeScale.MINUTES:
             return self.last_hour
         return self.last_five_minute
 
