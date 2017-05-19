@@ -54,15 +54,15 @@ MENU_XML = """
       <section>
         <item>
           <attribute name="action">app.viewSeconds</attribute>
-          <attribute name="label" translatable="yes">Seconds</attribute>
+          <attribute name="label" translatable="yes">Last three minutes</attribute>
         </item>
         <item>
           <attribute name="action">app.viewMinutes</attribute>
-          <attribute name="label" translatable="yes">Minutes</attribute>
+          <attribute name="label" translatable="yes">Last hour</attribute>
         </item>
         <item>
           <attribute name="action">app.viewHours</attribute>
-          <attribute name="label" translatable="yes">Hours</attribute>
+          <attribute name="label" translatable="yes">Last day</attribute>
         </item>
       </section>
     </submenu>
