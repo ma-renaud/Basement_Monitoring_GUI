@@ -257,7 +257,7 @@ class Application(Gtk.Application):
         while True:
             if self.serial_port.is_open:
                 self.decoder.decode(self.serial_port.read().decode("utf-8"))
-                if self.decoder.completed:
+                if self.decoder.completed and len(self.decoder.decoded) >= 2:
                     self.environmental_data_history.append(EnvironmentalData(self.decoder.decoded[0],
                                                                              self.decoder.decoded[1]))
             time.sleep(0.1)

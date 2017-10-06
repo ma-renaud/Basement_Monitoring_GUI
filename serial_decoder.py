@@ -21,7 +21,10 @@ class SerialDecoder(StateMachine):
         self.reception_buffer += _input
 
     def append_received_data(self):
-        self.decoded.append(float(self.reception_buffer))
+        try:
+            self.decoded.append(float(self.reception_buffer))
+        except ValueError:
+            pass
         self.reception_buffer = ""
 
     def reception_complete(self):
