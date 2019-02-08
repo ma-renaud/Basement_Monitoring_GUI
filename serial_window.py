@@ -23,7 +23,6 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Serial line to connect to", xalign=0)
         self.ed_comm_line = Gtk.Entry()
-        self.ed_comm_line.set_text(serial_config.line)
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(self.ed_comm_line, False, True, 0)
 
@@ -31,7 +30,6 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Speed (baud)", xalign=0)
         self.ed_speed = Gtk.Entry()
-        self.ed_speed.set_text(str(serial_config.speed))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(self.ed_speed, False, True, 0)
 
@@ -39,7 +37,6 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Data bits", xalign=0)
         self.ed_data = Gtk.Entry()
-        self.ed_data.set_text(str(serial_config.data_bits))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(self.ed_data, False, True, 0)
 
@@ -47,7 +44,6 @@ class SerialWindow(Gtk.Window):
         box_outer.pack_start(hbox, False, True, 0)
         label = Gtk.Label("Stop bits", xalign=0)
         self.ed_stop = Gtk.Entry()
-        self.ed_stop.set_text(str(serial_config.stop_bits))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(self.ed_stop, False, True, 0)
 
@@ -56,7 +52,6 @@ class SerialWindow(Gtk.Window):
         label = Gtk.Label("Parity", xalign=0)
         self.combo_parity = Gtk.ComboBoxText()
         self.fill_combo_parity(self.combo_parity)
-        self.combo_parity.set_active_id(str(serial_config.parity))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(self.combo_parity, False, True, 0)
 
@@ -65,7 +60,6 @@ class SerialWindow(Gtk.Window):
         label = Gtk.Label("Flow control", xalign=0)
         self.combo_flow = Gtk.ComboBoxText()
         self.fill_combo_flow(self.combo_flow)
-        self.combo_flow.set_active_id(str(serial_config.flow))
         hbox.pack_start(label, True, True, 0)
         hbox.pack_start(self.combo_flow, False, True, 0)
 
@@ -90,6 +84,9 @@ class SerialWindow(Gtk.Window):
         vbox.pack_start(halign, False, False, 0)
         box_outer.pack_start(vbox, True, True, 0)
 
+        if serial_config is not None:
+            self.load_config();
+
         self.show_all()
 
     @staticmethod
@@ -108,21 +105,30 @@ class SerialWindow(Gtk.Window):
         combo.insert(3, "3", "RTS/CTS")
 
     def on_save_clicked(self, button):
-        self.serial_config.line = self.ed_comm_line.get_text()
-        self.serial_config.speed = int(self.ed_speed.get_text())
-        self.serial_config.data_bits = int(self.ed_data.get_text())
-        self.serial_config.stop_bits = int(self.ed_stop.get_text())
-        self.serial_config.parity = int(self.combo_parity.get_active_id())
-        self.serial_config.flow = int(self.combo_flow.get_active_id())
-        self.callback(self.serial_config)
+        if self.serial_config is not None:
+            self.serial_config.line = self.ed_comm_line.get_text()
+            self.serial_config.speed = int(self.ed_speed.get_text())
+            self.serial_config.data_bits = int(self.ed_data.get_text())
+            self.serial_config.stop_bits = int(self.ed_stop.get_text())
+            self.serial_config.parity = int(self.combo_parity.get_active_id())
+            self.serial_config.flow = int(self.combo_flow.get_active_id())
+            self.callback(self.serial_config)
         self.close()
 
     def on_cancel_clicked(self, button):
         self.close()
 
+    def load_config(self):
+        self.ed_comm_line.set_text(self.serial_config.line)
+        self.ed_speed.set_text(str(self.serial_config.speed))
+        self.ed_data.set_text(str(self.serial_config.data_bits))
+        self.ed_stop.set_text(str(self.serial_config.stop_bits))
+        self.combo_parity.set_active_id(str(self.serial_config.parity))
+        self.combo_flow.set_active_id(str(self.serial_config.flow))
+
 
 if __name__ == "__main__":
-    win = SerialWindow()
+    win = SerialWindow(None, None)
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
     Gtk.main()
